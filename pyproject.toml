@@ -1,0 +1,10 @@
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.0"]
+
+
+[tool.setuptools_scm]
+write_to = "src/machine_labor/_version.py"
+
+[tool.pytask.ini_options]
+paths = ["./src/machine_labor", "./paper"]
+infer_latex_dependencies = true
