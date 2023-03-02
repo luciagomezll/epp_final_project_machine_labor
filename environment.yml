@@ -39,6 +39,7 @@ dependencies:
   - python-graphviz
   - python-kaleido
 
-
   - pip:
     - -e .  # installs the project
+    - scikit-learn
+    - matplotlib

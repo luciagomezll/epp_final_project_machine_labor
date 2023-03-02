@@ -11,6 +11,7 @@
 
 # bld
 bld/
+src/machine_labor/data/
 
 # latex
 *.aux
@@ -24,3 +25,7 @@ bld/
 *.pdf
 *.run.xml
 *.synctex.gz
+
+# documents to ignore
+draft.py
+replication_codes.ipynb

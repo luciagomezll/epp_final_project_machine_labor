@@ -32,3 +32,4 @@ def clean_data(data, data_info):
     data[data_info["outcome_numerical"]] = numerical_outcome
 
     return data
+
