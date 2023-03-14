@@ -4,7 +4,6 @@ import pytask
 
 import numpy as np
 import pandas as pd
-import datetime as dt
 
 startyear = 1979
 
@@ -24,6 +23,7 @@ def state_codes(data):
     return state_codes
 
 def month_codes(data):
+    data = data.sort_values(by=['year','month','monthdate']) 
     data = data.drop_duplicates()
     nmonth = data.loc[data['year']==startyear,'month']
     nmonth = list(enumerate(nmonth,1))

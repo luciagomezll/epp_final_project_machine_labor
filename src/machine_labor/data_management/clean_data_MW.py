@@ -6,22 +6,31 @@ startyear = 1979
 endyear = 2019
 cpi_baseyear = 2016
 change_cpsmorg_ncol = {"veteran": "veteran_old","quarterdate": "quarternum",
-                       "statenum": "state_name","month":"month_num"}
+                       "month":"month_num"}
 
-def get_fortraining_eventstudy_data(data_forbalance,data_eventclass,data_cps_morg,data_cpi,
+
+def get_fortraining_eventstudy_data(data):
+    fortraining = data[data['relMW_groups'].notna()]  
+    fortraining = fortraining[~(fortraining['class'].isin([5,6]) & (fortraining['year']<=1993))] 
+    fortraining = fortraining[~(fortraining['class94'].isin([6,7]) & (fortraining['year']>=1994))] 
+    return fortraining
+
+def get_forprediction_eventstudy_data(data_forbalance,data_eventclass,data_cps_morg,data_cpi,
                                     quarter_codes,state_codes,month_codes):
     forbalance = get_forbalance_data(data_forbalance,quarter_codes)
     prewindow = get_prewindow_data(forbalance,data_eventclass,quarter_codes,state_codes)
-    totpop = get_totpop_data(data_cps_morg,data_cpi,state_codes,quarter_codes,month_codes)
-    cps_morg_cpi = get_cps_morg_cpi_data(data_cps_morg,data_cpi,state_codes,quarter_codes,month_codes)
+    clean_cps_morg_cpi = _clean_cps_morg_cpi_data(data_cps_morg,data_cpi,state_codes,quarter_codes,month_codes)
+    totpop = get_totpop_data(clean_cps_morg_cpi)
+    cps_morg_cpi = get_cps_morg_cpi_data(clean_cps_morg_cpi)
     merge_1 = pd.merge(cps_morg_cpi,totpop,how="inner",on=["statenum","quarterdate"])
-    merge_2 = pd.merge(merge_1,forbalance,how="inner",on=["statenum","quarterdate"])
+    merge_2 = pd.merge(merge_1,forbalance,how="inner",on=["statenum","quarterdate","year","quarternum"])
     merge_3 = pd.merge(merge_2,prewindow,how="inner",on=["statenum","quarterdate"])
     merge_3['MW'] = np.exp(merge_3['logmw'])
     merge_3['ratio_mw'] = merge_3['origin_wage']/merge_3['MW']
-    merge_3['relMW_groups'] = np.where((merge_3['ratio_mw']<1) & (merge_3['origin_wage'].notna()) & (merge_3['origin_wage']>0),1,np.nan)
-    merge_3['relMW_groups'] = np.where((merge_3['ratio_mw']>=1) & (merge_3['origin_wage']<1.25) & (merge_3['origin_wage'].notna()),2,merge_3['relMW_groups'])
-    merge_3['relMW_groups'] = np.where((merge_3['ratio_mw']>=1.25) & (merge_3['origin_wage'].notna()),3,merge_3['relMW_groups'])
+    merge_3.loc[merge_3['origin_wage']==0,'ratio_mw'] = 0 
+    merge_3.loc[(merge_3['ratio_mw']<1) & (merge_3['origin_wage'].notna()) & (merge_3['origin_wage']>0),'relMW_groups'] = 1
+    merge_3.loc[(merge_3['ratio_mw']>=1) & (merge_3['ratio_mw']<1.25) & (merge_3['origin_wage'].notnull()),'relMW_groups'] = 2
+    merge_3.loc[(merge_3['ratio_mw']>=1.25) & (merge_3['origin_wage'].notna()),'relMW_groups'] = 3
     merge_3['training'] = np.where((merge_3['prewindow']==1) & (~merge_3['origin_wage'].isin([0,np.nan])),1,0)
     merge_3['validation'] = np.where((merge_3['prewindow']==0) & (merge_3['postwindow']==0) & (~merge_3['origin_wage'].isin([0,np.nan])),1,0)
     return merge_3
@@ -59,36 +68,38 @@ def get_prewindow_data(forbalance,data_eventclass,quarter_codes,state_codes):
     prewindow = pd.merge(prewindow,state_codes,how="left",on=['statenum'])
     return prewindow
 
-def get_totpop_data(data_cps_morg,data_cpi,state_codes,quarter_codes,month_codes):
-    cps_morg_cpi = _clean_cps_morg_cpi_data(data_cps_morg,data_cpi,state_codes,quarter_codes,month_codes)
+def get_totpop_data(cps_morg_cpi):
     list_var = ["monthdate", "quarterdate", "statenum", "earnwt"]
     totpop = cps_morg_cpi[list_var]
     totpop['totalpopulation'] = totpop.groupby(['statenum', 'monthdate'],as_index=False)['earnwt'].transform('sum')
-    totpop = totpop.groupby(['statenum', 'quarterdate'],as_index=False).mean()[['totalpopulation']]
+    totpop = totpop[['statenum','quarterdate','totalpopulation']]
+    totpop = totpop.groupby(['statenum', 'quarterdate'],as_index=False).mean()
     return totpop
 
-def get_cps_morg_cpi_data(data_cps_morg,data_cpi,state_codes,quarter_codes,month_codes):
-    cps_morg_cpi = _clean_cps_morg_cpi_data(data_cps_morg,data_cpi,state_codes,quarter_codes,month_codes)
-    cps_morg_cpi['wage'] = np.where(cps_morg_cpi["paidhre"]==1,cps_morg_cpi["earnhre"]/100,np.nan)
-    cps_morg_cpi['wage'] = np.where(cps_morg_cpi["paidhre"]==2,cps_morg_cpi["earnwke"]/cps_morg_cpi["uhourse"],cps_morg_cpi['wage'])
-    cps_morg_cpi['hoursimputed'] = np.where(cps_morg_cpi["I25a"].notna() & cps_morg_cpi["I25a"] > 0 ,1,0)
-    cps_morg_cpi['wageimputed'] = np.where(cps_morg_cpi["I25c"].notna() & cps_morg_cpi["I25c"] > 0 ,1,0)
-    cps_morg_cpi['earningsimputed'] = np.where(cps_morg_cpi["I25d"].notna() & cps_morg_cpi["I25d"] > 0 ,1,0) 
+def get_cps_morg_cpi_data(cps_morg_cpi):
+    cps_morg_cpi.loc[cps_morg_cpi["paidhre"]==1,'wage'] = (cps_morg_cpi["earnhre"])/100
+    cps_morg_cpi.loc[cps_morg_cpi["paidhre"]==2,'wage'] = cps_morg_cpi["earnwke"]/cps_morg_cpi["uhourse"]
+    cps_morg_cpi.loc[(cps_morg_cpi["paidhre"]==2) & (cps_morg_cpi["uhourse"]==0),'wage'] = np.nan
+    cps_morg_cpi['hoursimputed'] = np.where((cps_morg_cpi["I25a"].notna()) & (cps_morg_cpi["I25a"] > 0),1,0)
+    cps_morg_cpi['wageimputed'] = np.where((cps_morg_cpi["I25c"].notna()) & (cps_morg_cpi["I25c"] > 0),1,0)
+    cps_morg_cpi['earningsimputed'] = np.where((cps_morg_cpi["I25d"].notna()) & (cps_morg_cpi["I25d"] > 0),1,0) 
+
     varlist = ['hoursimputed','earningsimputed','wageimputed']
-
     for column in cps_morg_cpi[varlist]:
-        cps_morg_cpi[column] = np.where(cps_morg_cpi['year'].isin(range(1989,1994)),0,cps_morg_cpi[column])
-        cps_morg_cpi[column] = np.where((cps_morg_cpi['year']==1994) | (cps_morg_cpi['year']==1995 & (cps_morg_cpi['month_num']<=8)),0,cps_morg_cpi[column])
+        cps_morg_cpi.loc[cps_morg_cpi['year'].isin(range(1989,1994)),column] = 0
+        cps_morg_cpi.loc[(cps_morg_cpi['year']==1994) | ((cps_morg_cpi['year']==1995) & (cps_morg_cpi['month_num']<=8)),column] = 0
 
-    cps_morg_cpi['wageimputed'] = np.where((cps_morg_cpi["year"].isin(range(1989,1994))) & (cps_morg_cpi["earnhr"].isna() & cps_morg_cpi["earnhr"]==0) & (cps_morg_cpi["earnhre"].notna() & cps_morg_cpi["earnhre"]>0),1,cps_morg_cpi['wageimputed'])
-    cps_morg_cpi['hoursimputed'] = np.where((cps_morg_cpi["year"].isin(range(1989,1994))) & (cps_morg_cpi["uhours"].isna() & cps_morg_cpi["uhours"]==0) & (cps_morg_cpi["uhourse"].notna() & cps_morg_cpi["uhourse"]>0),1,cps_morg_cpi['hoursimputed'])
-    cps_morg_cpi['earningsimputed'] = np.where((cps_morg_cpi["year"].isin(range(1989,1994))) & (cps_morg_cpi["uearnwk"].isna() & cps_morg_cpi["uearnwk"]==0) & (cps_morg_cpi["earnwke"].notna() & cps_morg_cpi["earnwke"]>0),1,cps_morg_cpi['earningsimputed'])
+    cps_morg_cpi.loc[(cps_morg_cpi["year"].isin(range(1989,1994))) & (cps_morg_cpi["earnhr"].isin([np.nan,0])) & ((cps_morg_cpi["earnhre"].notna()) & (cps_morg_cpi["earnhre"]>0)),'wageimputed'] = 1
+    cps_morg_cpi.loc[(cps_morg_cpi["year"].isin(range(1989,1994))) & (cps_morg_cpi["uhours"].isin([np.nan,0])) & (cps_morg_cpi["uhourse"].notna() & (cps_morg_cpi["uhourse"]>0)),'hoursimputed'] = 1
+    cps_morg_cpi.loc[(cps_morg_cpi["year"].isin(range(1989,1994))) & (cps_morg_cpi["uearnwk"].isin([np.nan,0])) & (cps_morg_cpi["earnwke"].notna() & (cps_morg_cpi["earnwke"]>0)),'earningsimputed'] = 1
     cps_morg_cpi['imputed'] = np.where((cps_morg_cpi['paidhre']==2) & ((cps_morg_cpi['hoursimputed']==1) | (cps_morg_cpi['earningsimputed']==1)),1,0)
-    cps_morg_cpi['imputed'] = np.where((cps_morg_cpi['paidhre']==1) & (cps_morg_cpi['wageimputed']==1),1,cps_morg_cpi['imputed'])
-    cps_morg_cpi['wage'] = np.where(cps_morg_cpi['imputed']==1,np.nan,cps_morg_cpi['wage'])
+    cps_morg_cpi.loc[(cps_morg_cpi['paidhre']==1) & (cps_morg_cpi['wageimputed']==1),'imputed'] = 1
+    cps_morg_cpi.loc[cps_morg_cpi['imputed']==1,'wage'] = np.nan
     cps_morg_cpi['logwage'] = np.log(cps_morg_cpi['wage'])
-    cps_morg_cpi['origin_wage'] = cps_morg_cpi['wage'] 
-    cps_morg_cpi['wage'] = (cps_morg_cpi['origin_wage']/(cps_morg_cpi['cpi']/100))*100
+    cps_morg_cpi.loc[cps_morg_cpi['wage']==0,'logwage'] = np.nan
+    cps_morg_cpi['origin_wage'] = cps_morg_cpi['wage']  
+    cps_morg_cpi['wage'] = ((cps_morg_cpi['origin_wage'])/(cps_morg_cpi['cpi']/100))*100
+    cps_morg_cpi.loc[cps_morg_cpi['cpi']==0,'wage'] = np.nan
     cps_morg_cpi['mlr'] = np.where(cps_morg_cpi['year'].isin(range(1979,1989)),cps_morg_cpi['esr'],np.nan) 
     cps_morg_cpi['mlr'] = np.where(cps_morg_cpi['year'].isin(range(1989,1994)),cps_morg_cpi['lfsr89'],cps_morg_cpi['mlr']) 
     cps_morg_cpi['mlr'] = np.where(cps_morg_cpi['year'].isin(range(1994,2020)),cps_morg_cpi['lfsr94'],cps_morg_cpi['mlr'])    
@@ -102,12 +113,12 @@ def get_cps_morg_cpi_data(data_cps_morg,data_cpi,state_codes,quarter_codes,month
     cps_morg_cpi['hgradecp'] = np.where(cps_morg_cpi['gradecp']==1,cps_morg_cpi['gradeat'],np.nan)
     cps_morg_cpi['hgradecp'] = np.where(cps_morg_cpi['gradecp']==2,cps_morg_cpi['gradeat']-1,cps_morg_cpi['hgradecp'])
     cps_morg_cpi['hgradecp'] = np.where(cps_morg_cpi['ihigrdc'].notna() & cps_morg_cpi['hgradecp'].isna(),cps_morg_cpi['ihigrdc'],cps_morg_cpi['hgradecp'])
-    grade92code = list(range(31,46))
+    grade92code = list(range(31,47))
     impute92code = (0,2.5,5.5,7.5,9,10,11,12,12,13,14,14,16,18,18,18)
 
     for i,j in zip(grade92code,impute92code):
-        a = grade92code[i]
-        b = impute92code[j]
+        a = i
+        b = j
         cps_morg_cpi.loc[cps_morg_cpi['grade92']==a,'hgradecp'] = b
        
     cps_morg_cpi['hgradecp'] = cps_morg_cpi['hgradecp'].replace(-1,0)
@@ -146,15 +157,18 @@ def _clean_cps_morg_cpi_data(cps_morg,data_cpi,state_codes,quarter_codes,month_c
     data_cpi = data_cpi.melt(id_vars="year")
     data_cpi = data_cpi.rename(columns={"variable": "monthnum", "value": "cpi"})
     data_cpi = data_cpi.loc[(data_cpi["year"] >= startyear) & (data_cpi["year"] <= endyear)]
+    data_cpi = data_cpi.rename(columns={"month": "monthnum"})
     data_cpi["monthnum"] = data_cpi["monthnum"].astype("category")
     cpi = pd.merge(data_cpi,month_codes,how="left")
     cpi["cpibase"] = cpi.loc[cpi["year"] == cpi_baseyear,"cpi"].mean()
-    cpi["cpi"] = 100*cpi["cpi"]/cpi["cpibase"]
+    cpi["cpi"] = 100*(cpi["cpi"]/cpi["cpibase"])
+    cpi.loc[cpi["cpibase"]==0,"cpi"] = np.nan
 
     cps_morg = cps_morg.rename(columns=change_cpsmorg_ncol)
     cps_morg = cps_morg.loc[cps_morg['year']>=startyear]
     
-    cps_morg_cpi = pd.merge(cps_morg,cpi,how="inner",on=["year","month","monthdate"])
-    cps_morg_cpi = pd.merge(cps_morg_cpi,state_codes,how="left",on=['statenum'])
-    cps_morg_cpi = pd.merge(cps_morg_cpi,quarter_codes,how="left",on=['quarternum'])
-    return cps_morg_cpi
+    clean_cps_morg_cpi = pd.merge(cps_morg,cpi,how="left",on=["year","month_num","monthdate"])
+    clean_cps_morg_cpi = pd.merge(clean_cps_morg_cpi,state_codes,how="left",on=['statenum'])
+    clean_cps_morg_cpi = pd.merge(clean_cps_morg_cpi,quarter_codes,how="left",on=['quarternum'])
+    clean_cps_morg_cpi['quarterdate'] = clean_cps_morg_cpi['quarterdate'].astype(str)
+    return clean_cps_morg_cpi

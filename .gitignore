@@ -29,3 +29,4 @@ src/machine_labor/data/
 # documents to ignore
 draft.py
 replication_codes.ipynb
+part2.ipynb
