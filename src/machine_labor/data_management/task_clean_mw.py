@@ -1,24 +1,50 @@
 import pytask
-from machine_labor.config import BLD
-from machine_labor.config import SRC
-
+import requests
 import pandas as pd
+
+from zipfile import ZipFile
+from machine_labor.config import BLD, SRC
 from machine_labor.data_management.clean_data_MW import get_forprediction_eventstudy_data
 from machine_labor.data_management.clean_data_MW import get_fortraining_eventstudy_data
 
+@pytask.mark.produces(SRC / "data" / "epp_ml_mw_data.zip")
+def task_download_df(produces):
+    url = 'https://www.dropbox.com/scl/fo/npdgaje0u3ejd5o51ty01/h?dl=1&rlkey=1fra89j9ymk5lnf74lqaqd3bs'
+    response = requests.get(url)
+    with open(produces, "wb") as f:
+        f.write(response.content)
+
+
+data_files = {
+    "VZmw_quarterly_lagsleads_1979_2019.dta": BLD / "python" / "data" / "VZmw_quarterly_lagsleads_1979_2019.dta",
+    "eventclassification_2019.dta": BLD / "python" / "data" / "eventclassification_2019.dta",
+    "cpiursai1977-2019.dta": BLD / "python" / "data" / "cpiursai1977-2019.dta",
+    "cps_morg_2019_new.dta": BLD / "python" / "data" / "cps_morg_2019_new.dta",
+}
+for key, value in data_files.items():
+    kwargs = {
+        "key": key,
+        "produces": value,
+    }
+    @pytask.mark.depends_on(SRC / "data" / "epp_ml_mw_data.zip")
+    @pytask.mark.task(id=key, kwargs=kwargs)
+    def task_unzip_df(depends_on, key):
+        with ZipFile(depends_on, "r") as zip_ref:
+            zip_ref.extract(key, path = BLD / "python" / "data")
+
 @pytask.mark.depends_on(
     {
-        "forbalance": SRC / "data" / "VZmw_quarterly_lagsleads_1979_2019.dta",
-        "eventclass": SRC / "data" / "eventclassification_2019.dta",
-        "cpi": SRC / "data" / "cpiursai1977-2019.dta",
-        "cps_morg": SRC / "data" / "cps_morg_2019_new.dta",
+        "forbalance": BLD / "python" / "data" / "VZmw_quarterly_lagsleads_1979_2019.dta",
+        "eventclass": BLD / "python" / "data" / "eventclassification_2019.dta",
+        "cpi": BLD / "python" / "data" / "cpiursai1977-2019.dta",
+        "cps_morg": BLD / "python" / "data" / "cps_morg_2019_new.dta",
         "state_codes": BLD / "python" / "data" / "state_codes.pkl",
         "quarter_codes": BLD / "python" / "data" / "quarter_codes.pkl",
         "month_codes": BLD / "python" / "data" / "month_codes.pkl",
     }
 )
 @pytask.mark.produces(BLD / "python" / "data" / "forpredictionmorg_full_eventstudy_2019.pkl")
-def task_forprediction_eventstudy_data(depends_on, produces):
+def task_forprediction_eventstudy_data(depends_on,produces):
     state_codes = pd.read_pickle(depends_on['state_codes'])
     quarter_codes = pd.read_pickle(depends_on['quarter_codes'])
     month_codes = pd.read_pickle(depends_on['month_codes'])
