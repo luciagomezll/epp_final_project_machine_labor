@@ -10,3 +10,33 @@ column_rename_mapping:
 
 outcome: col0
 outcome_numerical: col0_numerical
+
+important_variables:
+    - relMW_groups 
+    - sex 
+    - race 
+    - hispanic 
+    - dmarried 
+    - ruralstatus 
+    - veteran 
+    - educcat  
+    - age 
+    - black 
+
+columns_to_drop:
+    - monthnum
+    - month_num
+    - state_name
+    - quarternum
+    - ratio_mw
+
+intermediate_df:
+    - forbalance
+    - prewindow
+    - clean_cps_cpi
+    - totpop
+    - merge_cps_cpi
+
+
+
+
