@@ -16,6 +16,7 @@
 \usepackage[dvipsnames]{xcolor}
 \usepackage{subcaption}
 \usepackage{minibox}
+\usepackage{listings}
 % \usepackage{pdf14} % Enable for Manuscriptcentral -- can't handle pdf 1.5
 % \usepackage{endfloat} % Enable to move tables / figures to the end. Useful for some
 % submissions.
@@ -59,7 +60,7 @@
 
 \begin{document}
 
-\title{Machine Labor paper replication\thanks{Lucia Gomez Llactahuamani, University of Bonn. Email: \href{mailto:s6lugome@uni-bonn.de}{\nolinkurl{s6lugome [at] uni-bonn [dot] de}}.}}
+\title{Paper Replication: "Seeing beyond the Trees: Using Machine Learning to Estimate the Impact of Minimum Wages on Labor Market Outcomes"\thanks{Lucia Gomez Llactahuamani, University of Bonn. Email: \href{mailto:s6lugome@uni-bonn.de}{\nolinkurl{s6lugome@uni-bonn.de}}.}}
 
 \author{Lucia Gomez Llactahuamani}
 
@@ -82,11 +83,21 @@
 \section{Introduction} % (fold)
 \label{sec:introduction}
 
+This project replicates the first half of the main results from \citet{cengiz2022seeing} that applies machine learning 
+tools to predict who is affected by the policy of minimum wage changes. The code replicating the second part 
+of the paper, i.e., implementing an event study using prominent minimum wage increases in the U.S. between 1979
+ and 2019, is still ongoing. The original code of the paper is written is Stata and R, the main advantage of 
+ replicating it in Python is to unify all the codes in just one programming language that is free and open source. 
+ This replication has put emphasis in applying concepts learned in the EPP course such as best programming practices,
+ functional programming, Pytask, Pytest and docstrings.
+
+
 If you are using this template, please cite this item from the references:
 \citet{GaudeckerEconProjectTemplates}.
 
-The data set for the example project is taken from
-\url{https://www.stem.org.uk/resources/elibrary/resource/28452/large-datasets-stats4schools}.
+
+The data set for this project is taken from 
+\url{https://www.dropbox.com/sh/dtjmoo8udmc7ckl/AAD1rz5WalgkwZpiyaoNEtcia?dl=0}.
 It contains data on smoking habits in the UK, with 1691 observations and 12 variables.
 We consider only 4 of the 12 features for the prediction of the variable
 \texttt{smoking}: \texttt{marital\_status}, \texttt{highest\_qualification},
@@ -122,7 +133,108 @@ language.
 
 % section introduction (end)
 
+\section{Data} % (fold)
+\label{sec:data}
 
+The data set for this project is taken from 
+\url{https://www.dropbox.com/sh/dtjmoo8udmc7ckl/AAD1rz5WalgkwZpiyaoNEtcia?dl=0}.
+
+
+It contains data on smoking habits in the UK, with 1691 observations and 12 variables.
+We consider only 4 of the 12 features for the prediction of the variable
+\texttt{smoking}: \texttt{marital\_status}, \texttt{highest\_qualification},
+\texttt{gender} and \texttt{age}. We model the dependence using a Logistic model. All
+numerical features are included linearly, while categorical features are expanded into
+dummy variables. Figures below illustrate the model predictions over the lifetime. You
+will find one figure and one estimation summary table for each installed programming
+language.
+
+\lstset{language=Stata}
+\lstset{frame=lines}
+\lstset{caption={Taking random sample of panel data in Stata}}
+\begin{lstlisting}
+    use "${data}cps_morg_${endyear}.dta", clear
+
+    tempfile holding
+    save `holding'
+    keep hhid
+    duplicates drop
+    set seed 1234
+    sample 5 // Draw a 5% sample
+
+    merge 1:m hhid using `holding', keep(match) nogenerate
+\end{lstlisting}
+
+\begin{itemize}
+
+    \item Current Population Survey (CPS-ORG)
+    \item Consumer Price Index (CPI)
+    \item Minimum wage data:  per state and quarter level.
+    \item A raw dataset with information 
+    to identify the relevant post and pre-period around prominent minimum wage changes. 
+
+\end{itemize}
+
+
+\section{Prediction Algorithms}
+\label{sec: algorithms}
+
+\begin{itemize}
+\item Decision trees
+\item Random forest
+\item Boosting
+\item Card and Krueger's linear probability model 
+\end{itemize}
+
+\section{Predicting who is a minimum wage worker} % (fold)
+\label{sec:prediction}
+
+\subsection{Precision-recall curves and predicted probabilities}
+
+\begin{figure}[H]
+
+    \centering
+    \includegraphics[width=0.85\textwidth]{../python/figures/smoking_by_marital_status}
+
+    \caption{\emph{Python:} Model predictions of the smoking probability over the
+        lifetime. Each colored line represents a case where marital status is fixed to one
+        of the values present in the data set.}
+    \label{fig:python-predictions}
+
+\end{figure}
+
+\begin{figure}[H]
+
+    \centering
+    \includegraphics[width=0.85\textwidth]{../python/figures/smoking_by_marital_status}
+
+    \caption{\emph{Python:} Model predictions of the smoking probability over the
+        lifetime. Each colored line represents a case where marital status is fixed to one
+        of the values present in the data set.}
+    \label{fig:python-predictions}
+
+\end{figure}
+
+\begin{figure}[H]
+
+    \centering
+    \includegraphics[width=0.85\textwidth]{../python/figures/precision_recall_curves}
+
+    \caption{\emph{Precision - Recall Curves:} Plots the precision-recall curves for various
+    prediction models described in section IV.A and for a basic logistic model that we
+    estimate using (linear) age and categorical education variables. }
+    \label{fig:python-predictions}
+
+\end{figure}
+
+
+
+
+\subsection{Who are the minimum wage workers?}
+
+
+\section{Conclusion}
+\label{sec:conclusion}
 
 \setstretch{1}
 \printbibliography
