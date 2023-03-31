@@ -85,14 +85,15 @@
 
 \begin{abstract}
 
-This project replicates the first half of the main results from \citet{cengiz2022seeing} 
-that applies machine learning tools to predict who is affected by the policy of minimum 
-wage changes. The code replicating the second part of the paper, i.e., implementing an event 
-study using prominent minimum wage increases in the U.S. between 1979 and 2019, is still ongoing. 
-The original code of the paper is written is Stata and R, the main advantage of replicating 
-it in Python is to unify all the codes in just one programming language that is free and open source. 
-This replication has put emphasis in applying concepts learned in the EPP course such 
-as best programming practices, functional programming, Pytask, Pytest and docstrings.
+This project replicates the first half of the main results from \citet{cengiz2022seeing}.
+Following the authors, I apply machine learning methods to identify the potencial workers 
+who are actually affected by the minimum wage policy. Although the code for the second part 
+of the paper, estimating the impact of the minimum wage on labor market outcomes, is still 
+being developed, this project represents a significant advance. In contrast to the original 
+code, which was written in Stata and R, I replicated the study in Python, streamlining all 
+the code into a single programming language that is both free and open source. 
+This replication project emphasizes the application of best programming practices and 
+concepts learned in the EPP course, including functional programming, Pytask, Pytest, and docstrings.
 \end{abstract}
 
 \clearpage
@@ -101,18 +102,25 @@ as best programming practices, functional programming, Pytask, Pytest and docstr
 \section{Introduction} % (fold)
 \label{sec:introduction}
 
-This project replicates the first half of the main results from \citet{cengiz2022seeing} that applies machine learning 
-tools to predict who is affected by the policy of minimum wage changes. The code replicating the second part 
-of the paper, i.e., implementing an event study using prominent minimum wage increases in the U.S. between 1979
-and 2019, is still ongoing. The original code of the paper is written is Stata and R, the main advantage of 
-replicating it in Python is to unify all the codes in just one programming language that is free and open source. 
-This replication has put emphasis in applying concepts learned in the EPP course such as best programming practices,
-functional programming, Pytask, Pytest and docstrings.
+The motivation to replicate the paper of \citet{cengiz2022seeing} comes from the fact that 
+they are among the first to apply machine learning techniques to identify the workers 
+potentially affected by the minimum wage. While it is easy to locate workers who are 
+currently earning the minimum wage, it is difﬁcult to
+identify all potential workers who also may have been working had the min-
+imum wage been different. This difﬁculty has led many researchers to focus
+on speciﬁc industries or demographic groups, such as
+teens or younger workers. Their approach of using prediction models 
+to classify workers who are likely to be exposed to a minimum wage treatment 
+has the main advantage that they are able to 
+assess the effect of the minimum wage on a large fraction of low-wage
+workers and not just on some speciﬁc subgroups with high exposure.
 
 \section{Data} % (fold)
 \label{sec:data}
 
-The original data set of the study is stored in \url{https://www.dropbox.com/sh/dtjmoo8udmc7ckl/AAD1rz5WalgkwZpiyaoNEtcia?dl=1}. It can be downloaded using the following code:
+The original data set of the study is stored in 
+\url{https://www.dropbox.com/sh/dtjmoo8udmc7ckl/AAD1rz5WalgkwZpiyaoNEtcia?dl=1}. It can be downloaded using the following code:
+It can be accessed from Python by using the following code:
 
 \lstset{language=Python}
 \lstset{frame=lines}
@@ -131,29 +139,55 @@ with ZipFile(zip_file, "r") as zip_ref:
     zip_ref.extractall(path= dir_unzipped_files)
 \end{lstlisting}
 
-In the original data set, the CPS-ORG file, which contains the relevant variables for the prediction, 
-has around 13 million of observations. In order to lesser the processing time I randomly drawn a 
-subsample of $5\%$ of the total number of observations.
+The primary data used the paper of \citet{cengiz2022seeing} were obtained 
+from the 1979-2019 Current Population Survey Outgoing Rotation Group (CPS-ORG), 
+which comprises approximately 13 million observations. In order to facilitate 
+the replication process, I extracted a random sample of 5\% 
+from the total number of observations, resulting in a sample size of 659,641.
 
-The final data set for this project is stored in \url{https://www.dropbox.com/scl/fo/npdgaje0u3ejd5o51ty01/h?dl=1}
-
-It contains the following data sets:
-
-\section{Prediction Algorithms}
-\label{sec: algorithms}
-
-In this section I built a prediction model to explain the relationship between a minimum wage worker 
-(defined as having an hourly wage of less than 125\% of the statutory minimum wage) and various
-demographic variables. Then I use the model to predict the likelihood of an individual being a 
-minimum wage worker.
-
-I apply various machine laerning methods such as decision tree, random forests, gradient-boosting tree, 
-linear probability model suggested by \citet{card2016myth}, and logistic regression to predict who is in the 
-group of minimum wahe workers. 
-For details on machine learning tree based methods, i.e. decision tree, random forests, gradient-boosting tree , review \citet{hastie2009elements}.
+The data set I use in this project is stored in 
+\url{https://www.dropbox.com/scl/fo/npdgaje0u3ejd5o51ty01/h?dl=1} 
+and contains the following data sets:
 
 \begin{itemize}
-\item Decision trees: 
+    \item Current Population Survey Outgoing Rotation Group (CPS-ORG) (cps-morg-2019-new.dta): The 1979-2019 
+    CPS-ORG data is a subset of the Basic Montly CPS (CPS-Basic), a montly survey of approximately 60000 households in the United
+    States. The CPS-ORG includes only the fourth and eight sample months. It contains data on on weekly earnings 
+    and weakly hours worked, as long as, demographic variables, with 659,641 observations and 164 variables\footnote{This 
+    data gather information on weekly earnings and weakly hours worked, as long as, demographic variables 
+    such as individual's age, race, hispanic status, gender, education, veteran status, marital status, 
+    and rural status of residency.}. We consider only 8 of the 164 features for the prediction of the variable
+    \texttt{relMW\_groups}: \texttt{age}, \texttt{sex}, \texttt{race}, \texttt{hispanic},
+    \texttt{dmarried}, \texttt{educcat}, \texttt{ruralstatus} and \texttt{veteran}. 
+    All these variables are relevant when predicting an individual's 
+    likelihood of belonging to the group that has a wage close to the minimum. 
+    The latest version can be found at this link: \url{https://cps.ipums.org/cps/}
+    \item Consumer Price Index (CPI) (cpiursai1977-2019.dta): per year and month for the period 1979-2019. 
+    A raw dataset that contains a measure of the average change over time in the prices paid by 
+    urban consumers for a market basket of consumer goods and services. 
+    The latest version can be found at this link: \url{https://www.bls.gov/cpi/data.htm}
+    \item Minimum wage data (VZmw-quarterly-lagsleads-1979-2019.dta):  per state and quarter level. 
+    It was built by \citet{vaghul2016historical}.
+    The latest version can be found at this link: \url{https://github.com/benzipperer/historicalminwage}
+    \item (eventclassification-2019.dta): A dataset with information 
+    to identify the relevant post and pre-period around prominent minimum wage changes. It was built by
+    the authors of the paper.
+\end{itemize}
+
+\section{Predicting who is a minimum wage worker} % (fold)
+\label{sec:prediction}
+
+I apply various machine learning methods such as decision tree, random forests, gradient-boosting tree, 
+logistic regression and the linear probability model suggested by \citet{card2016myth} to predict who 
+is in the group of minimum wahe workers. 
+
+For details on machine learning tree based methods, i.e. decision tree, 
+random forests and gradient-boosting tree, review \citet{hastie2009elements}.
+
+Following, I provide the parameters I used in the application of this machine learning techniques.
+
+\begin{itemize}
+\item Decision trees
 \item Random forest: The parameters the authors use when training this model are
 $2,000$ trees and two predictors tried at each split.
 \item Boosting: The parameters the authors use are: number of trees $= 4,000$, 
@@ -162,47 +196,55 @@ shrinkage factor $= 0.005$, depth of tree $=6$, and minimum observations in a no
 the functional form proposed by \citet{card2016myth}. 
 \end{itemize}
 
-\section{Predicting who is a minimum wage worker} % (fold)
-\label{sec:prediction}
+In the above models, all numerical features are included linearly, while categorical features 
+are expanded into dummy variables. 
 
-We model the dependence using a Logistic model. All
-numerical features are included linearly, while categorical features are expanded into
-dummy variables. Figures below illustrate the model predictions over the lifetime. You
-will find one figure and one estimation summary table for each installed programming
-language.
+In the remaining part I examine who are the most likely minimum wage workers
+according to the best-performing prediction model. To compare the 
+the models with each other, I employ precision and recall scores. 
+\begin{itemize}
+    \item "Precision" refers to the share of those I
+    classify as being in the predicted group of minimum wage workers who 
+    are true minimum wage workers.
+    \item "Recall" refers to the share of true minimum wage workers 
+    who I correctly classify as being in the predicted group. 
+\end{itemize}
 
-\subsection{Precision-recall curves and predicted probabilities}
-
-To compare the models with each other, I employ precision and recall scores. 
-"Precision" refers to the share of those I
-classify as being in the predicted group of minimum wage workers who are true minimum wage workers.
-"Recall" refers to the share of true minimum wage workers who I correctly
-classify as being in the predicted group. The ideal is to construct a predicted group that includes
+The ideal is to construct a predicted group that includes
 all the minimum wage workers and none of the non-minimum-wage
 workers so that both the precision and the recall are 1. Generally, the higher
 the precision for a given recall rate, the better the performance of the model.
 
-Figure \ref{fig:precision-recall} shows the precision-recall curves corresponding to the various
-prediction algorithms. 
+Figure 1 shows the precision-recall curves 
+corresponding to the various prediction algorithms. 
 
-The ﬁgure shows that the boosted tree model (solid line) outperforms other
+The ﬁgure shows that the decision-tree model outperforms other
+prediction models. Most of the machine learning techniques applied 
+in the project yielded results similar to those reported in the paper. 
+However, the decision tree-model produced a markedly different result, 
+which contradicts the literature that suggests it is not among the 
+most effective learners. I used the same parameters as the paper, 
+but the difference may be attributed to the software package used 
+for the calculations. Aside from the decision-tree model, 
+the ﬁgure shows that the boosted tree model outperforms other
 prediction models, since it provides the highest precision at almost all recall
-levels. 
+levels. The latest result matches with the findings of the paper.
+I are going to taking aside from the analysis the decision-tree model
+for the reasons earlier exposed.
 
 \begin{figure}[H]
 
     \centering
     \includegraphics[width=0.85\textwidth]{../bld/python/figures/precision_recall_curves}
 
-    \caption{\emph{Precision - Recall Curves:} Plots the precision-recall curves for various
-    prediction models described in section IV.A and for a basic logistic model that we
-    estimate using (linear) age and categorical education variables. }
+    \caption{\emph{Precision - Recall Curves}}
     \label{fig:precision-recall}
 
 \end{figure}
 
-For comparison, in ﬁgure \ref{fig:precision-relative} we report the other prediction models rel-
-ative to the boosted tree model. The boosted tree model (and also the other
+For comparison, in ﬁgure 2 we report 
+the other prediction models relative to the boosted tree model. 
+The boosted tree model (and also the other
 prediction algorithms) improves precision considerably relative to the basic
 logistic model. Nevertheless, the differences between the other prediction
 models and the boosted tree model are relatively small, especially at higher
@@ -211,23 +253,26 @@ recall rate levels.
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.85\textwidth]{../bld/python/figures/precision_relative_boost}
-    \caption{\emph{Precision - Recall Curves:} Plots the precision-recall curves for various
-    prediction models described in section IV.A and for a basic logistic model that we
-    estimate using (linear) age and categorical education variables. }
+    \caption{\emph{Precision - Recall Curves Relative to Boosting Tree Model}}
     \label{fig:precision-relative}
 
 \end{figure}
 
+The best-performing prediction comes from the gradient-boosting tree
+model. The original linear prediction model proposed by Card and Krueger
+also performs relatively well, even better than the random forest
+and the basic logistic model.
 
 \subsection{Who are the minimum wage workers?}
 
-An alternative way to examine who are the minimum wage workers is to consider 
-the relative importance of each predictor. In ﬁgure \ref{fig:feature_importance} 
-we plot the "relative
-inﬂuences" of the variables in the gradient-bossting tree model. 
+Once I have selected my best performing prediction model - the boosted tree model -
+I examine who are the minimum wage workers by considering  
+the relative importance of each predictor. In ﬁgure 3 
+I plot the "relative inﬂuences" of the variables in the gradient-bossting tree model. 
 It ﬁnds \texttt{age} as the most importantpredictor in the sample with a very large margin.
-The variable for educational credentials \texttt{educcat} comes after age. Gender variables \texttt{sex} are also relatively important
-in the prediction. The indicator variables for \texttt{hispanic}, \texttt{rural}, \texttt{race}, and
+The variable for educational credentials \texttt{educcat} comes after age. 
+Gender variables \texttt{sex} are also relatively important
+in the prediction. The indicator variables for \texttt{hispanic}, \texttt{dmarried}, \texttt{race}, and
 \texttt{veteran} status appear to have less inﬂuence on the prediction.
 
 \begin{figure}[H]
@@ -235,21 +280,20 @@ in the prediction. The indicator variables for \texttt{hispanic}, \texttt{rural}
     \centering
     \includegraphics[width=0.85\textwidth]{../bld/python/figures/feature_importance}
 
-    \caption{\emph{Precision - Recall Curves:} Plots the precision-recall curves for various
-    prediction models described in section IV.A and for a basic logistic model that we
-    estimate using (linear) age and categorical education variables. }
+    \caption{\emph{Relative influences of the predictors in the boosted tree prediction model}}
     \label{fig:feature_importance}
 
 \end{figure}
 
+By replicating the paper, we obtained similar results, 
+which led us to similar conclusions as the authors. 
+However, there were slight differences presumably resulting 
+from the translation of the codes from Stata and R to Python
 
-\section{Conclusion}
-\label{sec:conclusion}
 
 \setstretch{1}
 \printbibliography
 \setstretch{1.5}
-
 
 % \appendix
 

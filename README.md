@@ -53,7 +53,7 @@ To run the tests stored in the `tests` folder, in the root directory of your ter
 Warning:
 =============
 
-By replicating the paper, we obtained similar results, which led us to similar conclusions as the authors. However, there were slight differences resulting from the translation of the codes from Stata and R to Python:
+By replicating the paper, I obtained similar results, which led me to similar conclusions as the authors. However, there were slight differences resulting from the translation of the codes from Stata and R to Python:
 
 * Stata uses 32-bit floats in many instances, while Python's default is 64-bit (i.e., double precision) floats. This difference is important when selecting workers who earn less than the minimum wage, as it is determined by a ratio. Although the number of observations may vary slightly when selecting workers in Python or in Stata, the results and conclusions of the paper remain unchanged. For more information on this topic, refer to [here](https://www.stata.com/support/faqs/data-management/float-data-type/).
 * Most of the machine learning techniques applied in the project yielded results similar to those reported in the paper. However, the decision tree-model produced a markedly different result, which contradicts the literature that suggests it is not among the most effective learners. I used the same parameters as the paper, but the difference may be attributed to the software package used for the calculations.
