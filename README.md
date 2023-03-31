@@ -10,7 +10,7 @@ Author: Lucia Gomez Llactahuamani
 Abstract:
 =========
 
-This project replicates the first half of the main results from @cengiz2022seeing that applies machine learning tools to predict who is affected by the policy of minimum wage changes. The code replicating the second part of the paper, i.e., implementing an event study using prominent minimum wage increases in the U.S. between 1979 and 2019, is still ongoing. The original code of the paper is written is Stata and R, the main advantage of replicating it in Python is to unify all the codes in just one programming language that is free and open source. This replication has put emphasis in applying concepts learned in the EPP course such as best programming practices, functional programming, Pytask, Pytest and docstrings.
+This project replicates the first half of the main results from [Cengiz, D., Dube, A., Lindner, A., & Zentler-Munro, D. (2022)](https://www.journals.uchicago.edu/doi/abs/10.1086/718497).  Following the authors, I apply machine learning methods to identify the potencial workers who are actually affected by the minimum wage policy. Although the code for the second part of the paper – estimating the impact of the minimum wage on labor market outcomes – is still being developed, this project represents a significant advance. In contrast to the original code, which was written in Stata and R, I replicated the study in Python, streamlining all the code into a single programming language that is both free and open source. This replication project emphasizes the application of best programming practices and concepts learned in the EPP course, including functional programming, Pytask, Pytest, and docstrings.
 
 Content:
 =============
@@ -19,14 +19,14 @@ To navigate through the folders, the workflow is decomposed as follows:
 
 `src` folder includes all the necessary code used in the analysis. 
 
-* `data`: It contains part of the original data files used by @cengiz2022seeing.The paper uses the 1979-2019 CPS-Basic files and a subset of it, the 1979-2019 CPS-ORG. The full dataset contains around 24 million observations and the subset contains around 13 million observations. Given the constraint in my computer RAM, I randomly extracted 5% of the sample from the dataset 1979-2019 CPS-ORG by using Stata. I end up using 659,641 observations. I document it extensively in the $\LaTeX$ file of this project.
-* `data_management`: It contains the code to clean the datasets for the analysis part.
-* `analysis`: It contains the code for machine learning methods to predict who is affected by the policy of minimum wage changes
+* `data`: It contains part of the original data files used by [Cengiz, D., Dube, A., Lindner, A., & Zentler-Munro, D. (2022)](https://www.journals.uchicago.edu/doi/abs/10.1086/718497).The primary data used in this paper were obtained from the 1979-2019 Current Population Survey Outgoing Rotation Group (CPS-ORG), which comprises approximately 13 million observations. In order to facilitate the replication process, I extracted a random sample of 5% from the total number of observations, resulting in a sample size of 659,641. The process of obtaining the sample is documented extensively in the $\LaTeX$ file for this project.
+* `data_management`: It contains the code to clean the datasets before the `analysis`.
+* `analysis`: It contains the code to train the machine learning methods and to predict who is potencially affected by the minimum wage policy.
 * `final`: It contains the code to generate the final tables and figures.
 
 `tests` folder tests the functions in `data_management`and in `analysis`.
 
-`paper` folder contains the $\LaTeX$ file.
+`paper` folder contains the $\LaTeX$ files.
 
 Get started:
 =============
@@ -39,13 +39,24 @@ To run this project in a local machine:
 
 After cloning the repo, open a terminal in the root directory of the project. Create and activate the environment with
 
-
     $ conda env create -f environment.yml
     $ conda activate machine_labor
 
-To generate the output files that will be stored in `bld` folder, in the root directory of your terminal type
+To generate the output files that will be stored in the `bld` folder, in the root directory of your terminal type
 
     $ pytask
+
+To run the tests stored in the `tests` folder, in the root directory of your terminal type
+
+    $ pytest
+
+Warning:
+=============
+
+By replicating the paper, we obtained similar results, which led us to similar conclusions as the authors. However, there were slight differences resulting from the translation of the codes from Stata and R to Python:
+
+* Stata uses 32-bit floats in many instances, while Python's default is 64-bit (i.e., double precision) floats. This difference is important when selecting workers who earn less than the minimum wage, as it is determined by a ratio. Although the number of observations may vary slightly when selecting workers in Python or in Stata, the results and conclusions of the paper remain unchanged. For more information on this topic, refer to [here](https://www.stata.com/support/faqs/data-management/float-data-type/).
+* Most of the machine learning techniques applied in the project yielded results similar to those reported in the paper. However, the decision tree-model produced a markedly different result, which contradicts the literature that suggests it is not among the most effective learners. I used the same parameters as the paper, but the difference may be attributed to the software package used for the calculations.
 
 Credits
 =====
