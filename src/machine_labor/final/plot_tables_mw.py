@@ -3,12 +3,12 @@ import numpy as np
 import plotly.graph_objects as go
 
 def plot_precision_recall_curve(data):
-    """Plots precision-recall curves for the Boosting Tree, Random Forest, Decision Tree, Linear Regression, and Basic Logistic models.
+    """Plots precision-recall curves for the gradient-boosting tree, random forest, decision tree, linear regression, and basic logistic models.
     Args:
         data (pd.DataFrame): A DataFrame containing the recall and precision values for each model to be plotted.
 
     Returns:
-        fig : A plotly figure object representing plotted precision-recall curves for the boosted tree, random forest, decision tree, linear and logistic model.
+        fig : A plotly figure object representing plotted precision-recall curves for the gradient-boosting tree, random forest, decision tree, linear regression, and basic logistic models.
 
     """
     fig = go.Figure()
@@ -25,8 +25,8 @@ def plot_precision_recall_curve(data):
     return fig
 
 def plot_precision_relative_boost(data):
-    """Plots the precision-recall curves for the Random Forest, Decision Tree, Linear Regression, and Basic Logistic models,
-    relative to the Boosting Tree model.
+    """Plots the precision-recall curves for the random forest, decision tree, linear regression, and basic logistic models,
+    relative to the gradient-boosting tree model.
 
     Args:
         data (pd.DataFrame): A DataFrame containing the recall and precision values for each model to be plotted.
@@ -45,18 +45,18 @@ def plot_precision_relative_boost(data):
                       yaxis_title='Precision relative to the Boosting')
     return fig
 
-def feature_importance(boost_income):
-    """Plots the feature importance i.e. relative inﬂuences of the predictors in the Boosting Tree prediction model.
+def feature_importance(boost_basic_model):
+    """Plots the feature importance i.e. relative inﬂuences of the predictors in the gradient-boosting tree prediction model.
 
     Args:
         boost_income (sklearn.ensemble.GradientBoostingClassifier): A fitted boosting model.
 
     Returns:
-        fig : A plotly figure displaying in a descending order the feature importance of each predictor in the Boostring Tree model.
+        fig : A plotly figure displaying in a descending order the feature importance of each predictor in the gradient-boosting tree model.
 
     """
     feature_labels = ["age","race","sex","hispanic","dmarried","ruralstatus","educcat","veteran"]
-    feature_importance = boost_income.feature_importances_
+    feature_importance = boost_basic_model.feature_importances_
     data = {"feature": feature_labels, "importance": feature_importance}
     data = pd.DataFrame(data)
     ind = np.argsort(data["importance"], axis=1)

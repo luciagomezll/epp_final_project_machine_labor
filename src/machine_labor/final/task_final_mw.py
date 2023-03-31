@@ -23,7 +23,7 @@ def task_precision_relative_boost_curves(depends_on, produces):
     fig = plot_precision_relative_boost(precision_data)
     fig.write_image(produces)
 
-@pytask.mark.depends_on(BLD / "python" / "models" / "boost_income_model.pkl")
+@pytask.mark.depends_on(BLD / "python" / "models" / "boost_income_basic_model.pkl")
 @pytask.mark.produces(BLD / "python" / "figures" / "feature_importance.png")
 def task_feature_importance(depends_on, produces):
     boost_income = pickle.load(open(depends_on, 'rb'))

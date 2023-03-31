@@ -85,8 +85,8 @@ def get_precision_recall(data):
     return precision_df
 
 
-def get_boost_income(data):
-    """Train the boosted tree model.
+def get_boost_basic_model(data):
+    """Train the basic boosted tree model.
 
     Args:
         data (pd.DataFrame): The full data set generated as a result of the data cleaning part.
@@ -96,10 +96,27 @@ def get_boost_income(data):
 
     """
     data_train = _get_fortraining_data(data)[1]
-    x_tr,y_tr = data_train["age","race","sex","hispanic","dmarried","ruralstatus","educcat","veteran"],data_train['relMW_groups']
-    boost_income = GradientBoostingClassifier(n_estimators=4000, learning_rate=0.005, max_depth=6, min_samples_leaf = 10).fit(x_tr, y_tr)
-    return boost_income
+    xtr_basic,ytr_basic = data_train[["age","race","sex","hispanic","dmarried","ruralstatus","educcat","veteran"]],data_train['relMW_groups']
+    boost_basic = GradientBoostingClassifier(n_estimators=4000, learning_rate=0.005, max_depth=6, min_samples_leaf = 10).fit(xtr_basic,ytr_basic)
+    return boost_basic
 
+def get_boost_full_model(data):
+    """Train the complete boosted tree model.
+
+    Args:
+        data (pd.DataFrame): The full data set generated as a result of the data cleaning part.
+
+    Returns:
+        model (sklearn.ensemble.GradientBoostingClassifier): The trained boosted tree model.
+
+    """
+    data_train = _get_fortraining_data(data)[1]
+    formula = "relMW_groups~age+race+sex+hispanic+dmarried+ruralstatus+educcat+veteran"
+    ytr_full,xtr_full = dmatrices(formula,data_train,return_type="dataframe")
+    boost_full = GradientBoostingClassifier(
+        n_estimators=4000, learning_rate=0.005, max_depth=6, min_samples_leaf = 10
+    ).fit(xtr_full, ytr_full)
+    return boost_full
 
 def _get_fortraining_data(data):
     """Preprocesses and splits the input data into training and testing datasets.
