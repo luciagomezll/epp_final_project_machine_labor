@@ -7,7 +7,7 @@ from machine_labor.analysis.predict_mw import get_precision_recall
 from machine_labor.analysis.predict_mw import get_boost_income
 
 @pytask.mark.depends_on(BLD / "python" / "data" / "fortraining_eventstudy_1979_2019.pkl")
-@pytask.mark.produces(BLD / "python" / "data" / "precision_df.pickle")
+@pytask.mark.produces(BLD / "python" / "data" / "precision_df.pkl")
 def task_precision_recall_data(depends_on, produces):
     fortraining_eventstudy7919 = pd.read_pickle(depends_on)
     precision_df = get_precision_recall(fortraining_eventstudy7919)
@@ -15,7 +15,7 @@ def task_precision_recall_data(depends_on, produces):
     precision.to_pickle(produces)
 
 @pytask.mark.depends_on(BLD / "python" / "data" / "fortraining_eventstudy_1979_2019.pkl")
-@pytask.mark.produces(BLD / "python" / "models" / "boost_income.pickle")
+@pytask.mark.produces(BLD / "python" / "models" / "boost_income_model.pkl")
 def task_boost_income(depends_on, produces):
     fortraining_eventstudy7919 = pd.read_pickle(depends_on)
     boost_income = get_boost_income(fortraining_eventstudy7919)
